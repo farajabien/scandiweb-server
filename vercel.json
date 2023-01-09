@@ -1,6 +1,12 @@
 {
-  "build": "npm run build",
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    },
+    "command": "npm run build",
+    "output": "public"
+  },
   "routes": [
-    { "src": "/(.*)", "dest": "index.js" }
+    { "src": "/(.*)", "dest": "server.js" }
   ]
 }
