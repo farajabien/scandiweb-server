@@ -22,7 +22,6 @@ const checkAndCreateDb = async (dbConfig) => {
 		user: dbConfig.user,
 		password: dbConfig.password,
 	})
-
 	try {
 		const [results] = await connection
 			.promise()
@@ -32,16 +31,26 @@ const checkAndCreateDb = async (dbConfig) => {
 		}
 		//connect to the created database
 		connection.promise().query(`USE ${dbConfig.database}`)
-		//create table
-		await connection.promise().query(`CREATE TABLE products (
-       sku INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-       name VARCHAR(255) NOT NULL,
-       price DECIMAL(10,2) NOT NULL,
-       type ENUM("dvd","furniture","book") NOT NULL,
-       size INT(11) DEFAULT NULL,
-       dimensions VARCHAR(255) DEFAULT NULL,
-       weight INT(11) DEFAULT NULL
-       )`)
+
+		// check if the table already exists
+		const [tableExists] = await connection
+			.promise()
+			.query(
+				`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${dbConfig.database}' AND table_name = 'products'`
+			)
+
+		if (tableExists[0]['COUNT(*)'] === 0) {
+			//create table
+			await connection.promise().query(`CREATE TABLE products (
+           sku INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+           name VARCHAR(255) NOT NULL,
+           price DECIMAL(10,2) NOT NULL,
+           type ENUM("dvd","furniture","book") NOT NULL,
+           size INT(11) DEFAULT NULL,
+           dimensions VARCHAR(255) DEFAULT NULL,
+           weight INT(11) DEFAULT NULL
+           )`)
+		}
 	} catch (err) {
 		console.log('Error: ', err)
 	}
