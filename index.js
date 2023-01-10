@@ -1,14 +1,57 @@
+require('dotenv').config()
+
 const express = require('express')
 const mysql = require('mysql2')
 const bodyParser = require('body-parser')
 const cors = require('cors')
 
+const app = express()
+
 // Replace with your MySQL connection details
 const connection = mysql.createConnection({
-	host: 'localhost',
-	user: 'root',
-	password: 'password',
-	database: 'products',
+	host: process.env.DB_HOST,
+	user: process.env.DB_USER,
+	password: process.env.DB_PASSWORD,
+	database: process.env.DB_NAME,
+	port: 3306,
+})
+
+const checkAndCreateDb = async (dbConfig) => {
+	const connection = mysql.createConnection({
+		host: dbConfig.host,
+		user: dbConfig.user,
+		password: dbConfig.password,
+	})
+
+	try {
+		const [results] = await connection
+			.promise()
+			.query(`SHOW DATABASES LIKE '${dbConfig.database}'`)
+		if (results.length === 0) {
+			await connection.promise().query(`CREATE DATABASE ${dbConfig.database}`)
+		}
+		//connect to the created database
+		connection.promise().query(`USE ${dbConfig.database}`)
+		//create table
+		await connection.promise().query(`CREATE TABLE products (
+       sku INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+       name VARCHAR(255) NOT NULL,
+       price DECIMAL(10,2) NOT NULL,
+       type ENUM("dvd","furniture","book") NOT NULL,
+       size INT(11) DEFAULT NULL,
+       dimensions VARCHAR(255) DEFAULT NULL,
+       weight INT(11) DEFAULT NULL
+       )`)
+	} catch (err) {
+		console.log('Error: ', err)
+	}
+}
+
+checkAndCreateDb({
+	host: process.env.DB_HOST,
+	user: process.env.DB_USER,
+	password: process.env.DB_PASSWORD,
+	database: process.env.DB_NAME,
 })
 
 connection.connect((error) => {
@@ -72,8 +115,6 @@ const createProductFromRow = (row) => {
 			return new Product(row.sku, row.name, row.price, row.type)
 	}
 }
-
-const app = express()
 
 app.use(bodyParser.json())
 app.use(
